@@ -19,6 +19,9 @@ numpy>=1.26.0
 # Database
 aiosqlite>=0.20.0
 
+# Kalshi RSA authentication
+cryptography>=42.0.0
+
 # Utilities
 python-dotenv>=1.0.0
 structlog>=24.1.0

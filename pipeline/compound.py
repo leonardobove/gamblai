@@ -1,5 +1,6 @@
 import structlog
 
+from config import settings
 from db.repositories import TradeRepository, MarketRepository, KnowledgeRepository
 from knowledge.calibration import CalibrationTracker
 from knowledge.post_mortem import PostMortem
@@ -12,12 +13,34 @@ from models.trade import Trade, TradeAction
 log = structlog.get_logger()
 
 
+def _make_kalshi_executor():
+    from kalshi.client import KalshiClient
+    from kalshi.executor import KalshiExecutor
+
+    base_url = (
+        "https://demo-api.kalshi.co/trade-api/v2"
+        if settings.kalshi_demo
+        else "https://trading-api.kalshi.com/trade-api/v2"
+    )
+    client = KalshiClient(
+        base_url=base_url,
+        key_id=settings.kalshi_api_key_id,
+        private_key_path=settings.kalshi_private_key_path,
+    )
+    return KalshiExecutor(client)
+
+
 class CompoundStep:
     def __init__(self):
         self._trade_repo = TradeRepository()
         self._market_repo = MarketRepository()
         self._calibration = CalibrationTracker()
         self._post_mortem = PostMortem()
+        self._kalshi_executor = (
+            _make_kalshi_executor()
+            if settings.kalshi_enabled and settings.kalshi_execute_trades
+            else None
+        )
 
     def record_trade(
         self,
@@ -33,6 +56,22 @@ class CompoundStep:
             action = TradeAction.BUY_YES
         else:
             action = TradeAction.BUY_NO
+
+        # Execute on Kalshi if enabled (market.id == Kalshi ticker when using real markets)
+        kalshi_order_id = None
+        if self._kalshi_executor and market.metadata.get("source") == "kalshi":
+            order = self._kalshi_executor.place_order(
+                ticker=market.metadata["ticker"],
+                action=action,
+                position_size_dollars=assessment.kelly.recommended_size,
+                entry_price=market.market_price,
+            )
+            if order:
+                kalshi_order_id = order.get("order_id")
+                log.info("kalshi_order_submitted", order_id=kalshi_order_id, market_id=market.id)
+            else:
+                log.warning("kalshi_order_rejected_skipping", market_id=market.id)
+                return self.record_skip(market, assessment)
 
         trade = Trade(
             market_id=market.id,

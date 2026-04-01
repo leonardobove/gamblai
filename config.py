@@ -10,6 +10,13 @@ class Settings(BaseSettings):
     mirofish_url: str = Field(default="http://localhost:5001", env="MIROFISH_URL")
     mirofish_timeout: float = Field(default=30.0, env="MIROFISH_TIMEOUT")
 
+    # Kalshi integration (optional — leave blank to use simulation mode)
+    kalshi_enabled: bool = Field(default=False, env="KALSHI_ENABLED")
+    kalshi_demo: bool = Field(default=True, env="KALSHI_DEMO")  # True = demo, False = live
+    kalshi_api_key_id: str = Field(default="", env="KALSHI_API_KEY_ID")
+    kalshi_private_key_path: str = Field(default="kalshi_private.pem", env="KALSHI_PRIVATE_KEY_PATH")
+    kalshi_execute_trades: bool = Field(default=False, env="KALSHI_EXECUTE_TRADES")  # extra safety gate
+
     starting_bankroll: float = Field(default=10000.0, env="STARTING_BANKROLL")
     edge_threshold: float = Field(default=0.04, env="EDGE_THRESHOLD")
     kelly_fraction: float = Field(default=0.25, env="KELLY_FRACTION")

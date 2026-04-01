@@ -5,7 +5,11 @@
       "Bash(git init:*)",
       "Bash(git remote:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"feat: initial GamblAI prediction market trading bot simulation:*)"
+      "Bash(git commit -m \"feat: initial GamblAI prediction market trading bot simulation:*)",
+      "Bash(git push:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.kalshi.com)",
+      "Bash(git commit -m \"feat: Kalshi API v2 integration:*)"
     ]
   }
 }
