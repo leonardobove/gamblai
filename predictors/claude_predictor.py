@@ -20,12 +20,9 @@ Think step by step:
 3. Account for the market's current implied probability as a reference signal (but don't anchor to it)
 4. Produce a calibrated probability estimate
 
-Respond ONLY with valid JSON in this exact format:
-{
-  "probability": <float 0.0-1.0>,
-  "confidence": <float 0.0-1.0, your self-assessed confidence>,
-  "reasoning": "<2-3 sentence explanation>"
-}"""
+You MUST respond with ONLY a valid JSON object and nothing else — no markdown, no code fences, no explanation outside the JSON.
+Use this exact format:
+{"probability": 0.65, "confidence": 0.7, "reasoning": "Your 2-3 sentence explanation here."}"""
 
 
 class ClaudePredictor(BasePredictor):
@@ -72,10 +69,24 @@ Estimate the probability this market resolves YES."""
         )
 
     def _parse_json(self, text: str) -> dict:
+        # Strip markdown code fences if present
+        text = re.sub(r"```(?:json)?\s*", "", text).strip()
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            match = re.search(r"\{.*\}", text, re.DOTALL)
+            # Try extracting the first JSON object from the text
+            match = re.search(r"\{[^{}]*\}", text, re.DOTALL)
             if match:
-                return json.loads(match.group())
+                try:
+                    return json.loads(match.group())
+                except json.JSONDecodeError:
+                    pass
+            # Last resort: try to extract probability with regex
+            prob_match = re.search(r'"probability"\s*:\s*([\d.]+)', text)
+            if prob_match:
+                return {
+                    "probability": float(prob_match.group(1)),
+                    "confidence": 0.5,
+                    "reasoning": "Parsed from malformed response.",
+                }
             raise ValueError(f"Could not parse JSON from Claude response: {text[:200]}")

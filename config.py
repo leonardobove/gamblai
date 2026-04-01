@@ -32,10 +32,12 @@ class Settings(BaseSettings):
     markets_per_cycle: int = Field(default=3, env="MARKETS_PER_CYCLE")
     research_cache_minutes: int = Field(default=60, env="RESEARCH_CACHE_MINUTES")
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        extra = "ignore"
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "extra": "ignore",
+        "env_ignore_empty": True,  # .env values win over empty OS env vars (e.g. set by Claude Code)
+    }
 
 
 settings = Settings()
