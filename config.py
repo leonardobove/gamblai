@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     markets_per_cycle: int = Field(default=3, env="MARKETS_PER_CYCLE")
     research_cache_minutes: int = Field(default=60, env="RESEARCH_CACHE_MINUTES")
 
+    # Fast simulation: markets resolve in minutes instead of days (great for testing)
+    fast_simulation: bool = Field(default=False, env="FAST_SIMULATION")
+    fast_simulation_minutes_min: int = Field(default=2, env="FAST_SIM_MINUTES_MIN")
+    fast_simulation_minutes_max: int = Field(default=10, env="FAST_SIM_MINUTES_MAX")
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",

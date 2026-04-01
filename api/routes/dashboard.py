@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from pathlib import Path
 from fastapi.templating import Jinja2Templates
 
+from config import settings
 from db.repositories import PortfolioRepository, TradeRepository, MarketRepository
 from knowledge.calibration import CalibrationTracker
 
@@ -28,6 +29,22 @@ async def dashboard(request: Request):
     equity_labels = [s.timestamp.strftime("%m/%d %H:%M") for s in history]
     equity_values = [round(s.bankroll, 2) for s in history]
 
+    # Compute unrealized P&L on open positions using current market price as mark-to-market
+    open_trades = trade_repo.find_open()
+    unrealized_pnl = 0.0
+    for trade in open_trades:
+        market = market_repo.find_by_id(trade.market_id)
+        if market and trade.position_size > 0:
+            # Mark-to-market: difference between current price and entry price
+            price_delta = market.market_price - trade.entry_price
+            # BUY_YES profits when price rises; BUY_NO profits when price falls
+            from models.trade import TradeAction
+            direction = 1 if trade.action == TradeAction.BUY_YES else -1
+            unrealized_pnl += direction * price_delta * trade.position_size
+
+    current_bankroll = latest.bankroll if latest else settings.starting_bankroll
+    total_equity = round(current_bankroll + unrealized_pnl, 2)
+
     return _templates.TemplateResponse(
         request,
         "dashboard.html",
@@ -39,5 +56,9 @@ async def dashboard(request: Request):
             "active_markets": active_markets,
             "brier_score": brier_score,
             "cal_curve": cal_curve,
+            "open_trades": open_trades,
+            "unrealized_pnl": round(unrealized_pnl, 2),
+            "total_equity": total_equity,
+            "fast_simulation": settings.fast_simulation,
         },
     )

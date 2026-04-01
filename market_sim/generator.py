@@ -1,6 +1,7 @@
 import random
 from datetime import datetime, timedelta
 
+from config import settings
 from models.market import Market, MarketCategory
 
 _TEMPLATES: dict[MarketCategory, list[dict]] = {
@@ -88,12 +89,23 @@ class MarketGenerator:
             base_prob = template["base_prob"]
             # Add market noise: ±15 percentage points
             market_price = max(0.10, min(0.90, base_prob + random.uniform(-0.15, 0.15)))
-            resolution_days = random.randint(1, 21)
+
+            # Fast simulation: resolve in minutes for quick testing
+            if settings.fast_simulation:
+                resolution_minutes = random.randint(
+                    settings.fast_simulation_minutes_min,
+                    settings.fast_simulation_minutes_max,
+                )
+                resolution_date = datetime.utcnow() + timedelta(minutes=resolution_minutes)
+            else:
+                resolution_days = random.randint(1, 21)
+                resolution_date = datetime.utcnow() + timedelta(days=resolution_days)
+
             market = Market(
                 question=question,
                 category=category,
                 market_price=round(market_price, 3),
-                resolution_date=datetime.utcnow() + timedelta(days=resolution_days),
+                resolution_date=resolution_date,
                 metadata={"base_prob": base_prob, "template": template["question"]},
             )
             markets.append(market)
