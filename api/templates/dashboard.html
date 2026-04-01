@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GamblAI — Prediction Market Simulator</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Courier New', monospace; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; }
+  header { background: #111120; border-bottom: 1px solid #2a2a4a; padding: 16px 24px; display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 1.4rem; color: #7c6aff; letter-spacing: 2px; }
+  header .subtitle { font-size: 0.75rem; color: #666; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: #111120; border: 1px solid #2a2a4a; border-radius: 8px; padding: 16px; }
+  .stat-card .label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .stat-card .value { font-size: 1.6rem; font-weight: bold; }
+  .stat-card .value.green { color: #4cff91; }
+  .stat-card .value.red { color: #ff4c6a; }
+  .stat-card .value.blue { color: #4ca6ff; }
+  .stat-card .value.purple { color: #b06aff; }
+  .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card { background: #111120; border: 1px solid #2a2a4a; border-radius: 8px; padding: 16px; }
+  .chart-card h3 { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+  .chart-container { position: relative; height: 250px; }
+  .tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .table-card { background: #111120; border: 1px solid #2a2a4a; border-radius: 8px; padding: 16px; overflow: hidden; }
+  .table-card h3 { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  th { text-align: left; padding: 6px 8px; color: #555; border-bottom: 1px solid #2a2a4a; font-weight: normal; }
+  td { padding: 6px 8px; border-bottom: 1px solid #1a1a2a; }
+  tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 0.7rem; }
+  .badge.buy-yes { background: #1a3a1a; color: #4cff91; }
+  .badge.buy-no { background: #3a1a1a; color: #ff4c6a; }
+  .badge.skip { background: #2a2a2a; color: #888; }
+  .pnl-pos { color: #4cff91; }
+  .pnl-neg { color: #ff4c6a; }
+  .market-price { color: #4ca6ff; }
+  .no-data { text-align: center; color: #444; padding: 40px; font-size: 0.85rem; }
+  @media (max-width: 900px) { .charts-grid, .tables-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>GamblAI</h1>
+  <span class="subtitle">AI Prediction Market Simulator &mdash; Paper Trading Mode</span>
+  <span style="margin-left:auto;font-size:0.75rem;color:#444;">Auto-refreshes every 30s</span>
+</header>
+
+<div class="container">
+
+  <!-- Stats Row -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="label">Bankroll</div>
+      <div class="value {% if latest and latest.bankroll >= 10000 %}green{% else %}red{% endif %}">
+        ${{ "%.2f"|format(latest.bankroll if latest else 10000) }}
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Total P&amp;L</div>
+      <div class="value {% if latest and latest.total_pnl >= 0 %}green{% else %}red{% endif %}">
+        {% if latest %}{{ "%+.2f"|format(latest.total_pnl) }}{% else %}$0.00{% endif %}
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Win Rate</div>
+      <div class="value blue">{{ "%.1f"|format((latest.win_rate * 100) if latest else 0) }}%</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Total Trades</div>
+      <div class="value purple">{{ latest.total_trades if latest else 0 }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Open Positions</div>
+      <div class="value blue">{{ latest.open_position_count if latest else 0 }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Drawdown</div>
+      <div class="value {% if latest and latest.current_drawdown > 0.05 %}red{% else %}green{% endif %}">
+        {{ "%.1f"|format((latest.current_drawdown * 100) if latest else 0) }}%
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Brier Score</div>
+      <div class="value {% if brier_score and brier_score < 0.25 %}green{% else %}purple{% endif %}">
+        {% if brier_score %}{{ "%.4f"|format(brier_score) }}{% else %}N/A{% endif %}
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Active Markets</div>
+      <div class="value blue">{{ active_markets|length }}</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>Equity Curve</h3>
+      <div class="chart-container">
+        <canvas id="equityChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>Calibration Plot</h3>
+      <div class="chart-container">
+        <canvas id="calChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tables -->
+  <div class="tables-grid">
+    <div class="table-card">
+      <h3>Recent Trades</h3>
+      {% if recent_trades %}
+      <table>
+        <thead>
+          <tr><th>Action</th><th>Edge</th><th>Size</th><th>P&amp;L</th></tr>
+        </thead>
+        <tbody>
+          {% for t in recent_trades[:10] %}
+          <tr>
+            <td><span class="badge {{ t.action.value.replace('_','-') }}">{{ t.action.value.upper() }}</span></td>
+            <td>{{ "%.1f"|format(t.edge * 100) }}%</td>
+            <td>${{ "%.2f"|format(t.position_size) }}</td>
+            <td class="{% if t.pnl and t.pnl >= 0 %}pnl-pos{% else %}pnl-neg{% endif %}">
+              {% if t.pnl is not none %}{{ "%+.2f"|format(t.pnl) }}{% else %}&mdash;{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="no-data">No resolved trades yet. Run a pipeline cycle to get started.</div>
+      {% endif %}
+    </div>
+
+    <div class="table-card">
+      <h3>Active Markets</h3>
+      {% if active_markets %}
+      <table>
+        <thead>
+          <tr><th>Question</th><th>Price</th><th>Cat</th></tr>
+        </thead>
+        <tbody>
+          {% for m in active_markets[:10] %}
+          <tr>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ m.question }}">{{ m.question[:50] }}...</td>
+            <td class="market-price">{{ "%.1f"|format(m.market_price * 100) }}%</td>
+            <td style="color:#888;">{{ m.category.value[:4] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="no-data">No active markets. Run a pipeline cycle to generate markets.</div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<script>
+const equityLabels = {{ equity_labels | tojson }};
+const equityValues = {{ equity_values | tojson }};
+const calCurve = {{ cal_curve | tojson }};
+
+// Equity chart
+const equityCtx = document.getElementById('equityChart').getContext('2d');
+new Chart(equityCtx, {
+  type: 'line',
+  data: {
+    labels: equityLabels.length ? equityLabels : ['Start'],
+    datasets: [{
+      label: 'Bankroll ($)',
+      data: equityValues.length ? equityValues : [10000],
+      borderColor: '#7c6aff',
+      backgroundColor: 'rgba(124,106,255,0.1)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: equityValues.length > 50 ? 0 : 3,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#555', maxTicksLimit: 8 }, grid: { color: '#1a1a2a' } },
+      y: { ticks: { color: '#555', callback: v => '$'+v.toLocaleString() }, grid: { color: '#1a1a2a' } }
+    }
+  }
+});
+
+// Calibration chart
+const calCtx = document.getElementById('calChart').getContext('2d');
+const calData = calCurve.length ? calCurve : [];
+new Chart(calCtx, {
+  type: 'scatter',
+  data: {
+    datasets: [
+      {
+        label: 'Model',
+        data: calData.map(d => ({x: d.predicted, y: d.actual})),
+        backgroundColor: '#7c6aff',
+        pointRadius: 6,
+      },
+      {
+        label: 'Perfect',
+        data: [{x:0,y:0},{x:1,y:1}],
+        type: 'line',
+        borderColor: '#333',
+        borderDash: [4,4],
+        pointRadius: 0,
+        fill: false,
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#888', font: { size: 11 } } } },
+    scales: {
+      x: { min:0, max:1, title: { display:true, text:'Predicted', color:'#666' }, ticks:{color:'#555'}, grid:{color:'#1a1a2a'} },
+      y: { min:0, max:1, title: { display:true, text:'Actual', color:'#666' }, ticks:{color:'#555'}, grid:{color:'#1a1a2a'} }
+    }
+  }
+});
+
+// Auto-refresh
+setTimeout(() => location.reload(), 30000);
+</script>
+</body>
+</html>

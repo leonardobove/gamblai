@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "GamblAI Dashboard",
+      "runtimeExecutable": ".venv/Scripts/python",
+      "runtimeArgs": ["main.py", "dashboard", "--host", "127.0.0.1", "--port", "8000"],
+      "port": 8000
+    },
+    {
+      "name": "GamblAI Pipeline Loop",
+      "runtimeExecutable": ".venv/Scripts/python",
+      "runtimeArgs": ["main.py", "loop", "--interval", "300"],
+      "port": null
+    }
+  ]
+}
