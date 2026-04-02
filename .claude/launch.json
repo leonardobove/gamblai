@@ -10,7 +10,7 @@
     {
       "name": "GamblAI Pipeline Loop",
       "runtimeExecutable": ".venv/Scripts/python",
-      "runtimeArgs": ["main.py", "loop", "--interval", "300"],
+      "runtimeArgs": ["main.py", "loop", "--interval", "1800"],
       "port": null
     }
   ]
