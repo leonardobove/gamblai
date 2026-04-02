@@ -18,7 +18,11 @@ _API_PREFIX = "/trade-api/v2"
 
 class KalshiClient:
     def __init__(self, base_url: str, key_id: str, private_key_path: str, timeout: float = 15.0):
-        self._base_url = base_url.rstrip("/")
+        # Strip the API prefix from base_url if it was already included (e.g. from config)
+        stripped = base_url.rstrip("/")
+        if stripped.endswith(_API_PREFIX):
+            stripped = stripped[: -len(_API_PREFIX)]
+        self._base_url = stripped
         self._key_id = key_id
         self._private_key_path = private_key_path
         self._timeout = timeout
