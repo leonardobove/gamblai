@@ -7,18 +7,36 @@ from db.repositories import ResearchCacheRepository
 from models.market import Market
 from models.research import ResearchReport, NewsItem
 from research_providers.base import BaseResearchProvider
+from research_providers.composite import CompositeResearchProvider
+from research_providers.gdelt_provider import GDELTProvider
 from research_providers.mock_search import MockResearchProvider
+from research_providers.newsapi_provider import NewsAPIProvider
 from research_providers.web_search import TavilyResearchProvider
 
 log = structlog.get_logger()
 
 
 def _build_provider() -> BaseResearchProvider:
+    """
+    Provider priority (first available wins for primary source):
+      1. Tavily       — paid, best quality, semantic search
+      2. NewsAPI      — free 100/day, good quality
+      3. GDELT        — completely free, no key, titles only
+      4. Mock         — offline fallback
+
+    GDELT is always added as a supplemental source alongside paid providers
+    (it's free so there's no reason not to use it).
+    """
     if get_setting("tavily_api_key"):
-        log.info("research_provider", type="tavily")
-        return TavilyResearchProvider()
-    log.info("research_provider", type="mock")
-    return MockResearchProvider()
+        log.info("research_provider", type="tavily+gdelt")
+        return CompositeResearchProvider([TavilyResearchProvider(), GDELTProvider()])
+
+    if get_setting("newsapi_api_key"):
+        log.info("research_provider", type="newsapi+gdelt")
+        return CompositeResearchProvider([NewsAPIProvider(), GDELTProvider()])
+
+    log.info("research_provider", type="gdelt")
+    return GDELTProvider()
 
 
 class ResearchStep:

@@ -9,12 +9,13 @@ from pydantic import Field
 
 # Keys configurable via the Settings page (DB overrides .env for these)
 CONFIGURABLE_KEYS: list[dict] = [
-    {"key": "anthropic_api_key",   "label": "Anthropic API Key",            "is_secret": True},
-    {"key": "tavily_api_key",      "label": "Tavily API Key (optional)",     "is_secret": True},
-    {"key": "kalshi_api_key_id",   "label": "Kalshi API Key ID",             "is_secret": True},
-    {"key": "kalshi_private_key",  "label": "Kalshi Private Key (PEM text)", "is_secret": True, "multiline": True},
-    {"key": "kalshi_enabled",      "label": "Kalshi Enabled",                "is_secret": False, "type": "bool"},
-    {"key": "kalshi_execute_trades","label": "Kalshi Execute Trades",        "is_secret": False, "type": "bool"},
+    {"key": "anthropic_api_key",    "label": "Anthropic API Key",                         "is_secret": True},
+    {"key": "tavily_api_key",       "label": "Tavily API Key (optional — best quality)",  "is_secret": True},
+    {"key": "newsapi_api_key",      "label": "NewsAPI.org Key (optional — 100/day free)", "is_secret": True},
+    {"key": "kalshi_api_key_id",    "label": "Kalshi API Key ID",                         "is_secret": True},
+    {"key": "kalshi_private_key",   "label": "Kalshi Private Key (PEM text)",             "is_secret": True, "multiline": True},
+    {"key": "kalshi_enabled",       "label": "Kalshi Enabled",                            "is_secret": False, "type": "bool"},
+    {"key": "kalshi_execute_trades","label": "Kalshi Execute Trades",                     "is_secret": False, "type": "bool"},
 ]
 
 _kalshi_pem_tmpfile: Optional[str] = None

@@ -47,6 +47,7 @@ async def save_settings(
     request: Request,
     anthropic_api_key: Optional[str] = Form(default=None),
     tavily_api_key: Optional[str] = Form(default=None),
+    newsapi_api_key: Optional[str] = Form(default=None),
     kalshi_api_key_id: Optional[str] = Form(default=None),
     kalshi_private_key: Optional[str] = Form(default=None),
     kalshi_enabled: Optional[str] = Form(default=None),
@@ -67,6 +68,7 @@ async def save_settings(
     field_map = {
         "anthropic_api_key":     (anthropic_api_key,    True),
         "tavily_api_key":        (tavily_api_key,        True),
+        "newsapi_api_key":       (newsapi_api_key,       True),
         "kalshi_api_key_id":     (kalshi_api_key_id,     True),
         "kalshi_private_key":    (kalshi_private_key,    True),
         "kalshi_enabled":        (kalshi_enabled,        False),
