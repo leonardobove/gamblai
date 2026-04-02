@@ -1,6 +1,6 @@
 import structlog
 
-from config import settings
+from config import settings, get_setting, get_bool_setting, get_kalshi_private_key_path
 from db.repositories import MarketRepository
 from market_sim.generator import MarketGenerator
 from models.market import Market
@@ -19,8 +19,8 @@ def _make_kalshi_scanner():
     )
     client = KalshiClient(
         base_url=base_url,
-        key_id=settings.kalshi_api_key_id,
-        private_key_path=settings.kalshi_private_key_path,
+        key_id=get_setting("kalshi_api_key_id"),
+        private_key_path=get_kalshi_private_key_path(),
     )
     return KalshiScanner(client)
 
@@ -29,7 +29,7 @@ class ScanStep:
     def __init__(self):
         self._repo = MarketRepository()
         self._generator = MarketGenerator()
-        self._kalshi = _make_kalshi_scanner() if settings.kalshi_enabled else None
+        self._kalshi = _make_kalshi_scanner() if get_bool_setting("kalshi_enabled") else None
 
     def run(self) -> list[Market]:
         """Fetch/generate new markets and load existing unresolved ones."""

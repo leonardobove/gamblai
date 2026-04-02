@@ -75,3 +75,25 @@ CREATE INDEX IF NOT EXISTS idx_trades_market_id ON trades(market_id);
 CREATE INDEX IF NOT EXISTS idx_trades_resolved ON trades(resolved);
 CREATE INDEX IF NOT EXISTS idx_markets_resolved ON markets(resolved);
 CREATE INDEX IF NOT EXISTS idx_calibration_log_timestamp ON calibration_log(timestamp);
+
+-- API key / config storage (values entered via the Settings page)
+CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    is_secret INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL
+);
+
+-- Pipeline run history for health monitoring
+CREATE TABLE IF NOT EXISTS pipeline_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    started_at TEXT NOT NULL,
+    finished_at TEXT NOT NULL,
+    status TEXT NOT NULL,
+    duration_seconds REAL NOT NULL,
+    error_message TEXT,
+    markets_processed INTEGER NOT NULL DEFAULT 0,
+    trades_executed INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_pipeline_runs_started ON pipeline_runs(started_at);

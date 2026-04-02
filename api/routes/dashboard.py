@@ -3,8 +3,9 @@ from fastapi.responses import HTMLResponse
 from pathlib import Path
 from fastapi.templating import Jinja2Templates
 
+from api.auth import is_setup_complete
 from config import settings
-from db.repositories import PortfolioRepository, TradeRepository, MarketRepository
+from db.repositories import PortfolioRepository, TradeRepository, MarketRepository, PipelineRunRepository
 from knowledge.calibration import CalibrationTracker
 
 router = APIRouter()
@@ -24,6 +25,7 @@ async def dashboard(request: Request):
     brier_score = calibration.brier_score()
     cal_curve = calibration.calibration_curve()
 
+    pipeline_runs = PipelineRunRepository().get_recent(limit=10)
     latest = history[-1] if history else None
 
     equity_labels = [s.timestamp.strftime("%m/%d %H:%M") for s in history]
@@ -60,5 +62,7 @@ async def dashboard(request: Request):
             "unrealized_pnl": round(unrealized_pnl, 2),
             "total_equity": total_equity,
             "fast_simulation": settings.fast_simulation,
+            "pipeline_runs": pipeline_runs,
+            "needs_setup": not is_setup_complete(),
         },
     )

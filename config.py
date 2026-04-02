@@ -1,5 +1,23 @@
+import atexit
+import tempfile
+import os
+from typing import Optional
+
 from pydantic_settings import BaseSettings
 from pydantic import Field
+
+
+# Keys configurable via the Settings page (DB overrides .env for these)
+CONFIGURABLE_KEYS: list[dict] = [
+    {"key": "anthropic_api_key",   "label": "Anthropic API Key",            "is_secret": True},
+    {"key": "tavily_api_key",      "label": "Tavily API Key (optional)",     "is_secret": True},
+    {"key": "kalshi_api_key_id",   "label": "Kalshi API Key ID",             "is_secret": True},
+    {"key": "kalshi_private_key",  "label": "Kalshi Private Key (PEM text)", "is_secret": True, "multiline": True},
+    {"key": "kalshi_enabled",      "label": "Kalshi Enabled",                "is_secret": False, "type": "bool"},
+    {"key": "kalshi_execute_trades","label": "Kalshi Execute Trades",        "is_secret": False, "type": "bool"},
+]
+
+_kalshi_pem_tmpfile: Optional[str] = None
 
 
 class Settings(BaseSettings):
@@ -46,3 +64,48 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def get_setting(key: str) -> str:
+    """Return the value for a setting, preferring the DB over .env / env vars."""
+    try:
+        from db.repositories import SettingsRepository
+        db_val = SettingsRepository().get(key)
+        if db_val is not None and db_val.strip():
+            return db_val
+    except Exception:
+        pass
+    return str(getattr(settings, key, "") or "")
+
+
+def get_bool_setting(key: str) -> bool:
+    """Return a boolean setting, preferring the DB over .env / env vars."""
+    val = get_setting(key)
+    if val.lower() in ("true", "1", "yes"):
+        return True
+    if val.lower() in ("false", "0", "no"):
+        return False
+    return bool(getattr(settings, key, False))
+
+
+def get_kalshi_private_key_path() -> str:
+    """Return path to Kalshi private key PEM file.
+
+    If the PEM *content* was saved via the Settings page it is written to a
+    temporary file (created once per process).  Otherwise fall back to the
+    file path from .env / env vars.
+    """
+    global _kalshi_pem_tmpfile
+
+    pem_content = get_setting("kalshi_private_key")
+    if pem_content and "BEGIN" in pem_content:
+        if _kalshi_pem_tmpfile and os.path.exists(_kalshi_pem_tmpfile):
+            return _kalshi_pem_tmpfile
+        tmp = tempfile.NamedTemporaryFile(suffix=".pem", delete=False, mode="w")
+        tmp.write(pem_content)
+        tmp.close()
+        _kalshi_pem_tmpfile = tmp.name
+        atexit.register(lambda: os.unlink(_kalshi_pem_tmpfile) if os.path.exists(_kalshi_pem_tmpfile) else None)
+        return _kalshi_pem_tmpfile
+
+    return settings.kalshi_private_key_path

@@ -1,0 +1,37 @@
+app = "gamblai"
+primary_region = "ewr"
+
+[build]
+
+[env]
+  DB_PATH       = "/data/gamblai.db"
+  LOG_LEVEL     = "INFO"
+  LOOP_INTERVAL = "1800"
+
+[http_service]
+  internal_port        = 8000
+  force_https          = true
+  auto_stop_machines   = "suspend"
+  auto_start_machines  = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type       = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+  [[http_service.checks]]
+    interval     = "30s"
+    timeout      = "5s"
+    grace_period = "15s"
+    method       = "GET"
+    path         = "/"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[mounts]
+  source      = "gamblai_data"
+  destination = "/data"

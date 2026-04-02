@@ -1,7 +1,7 @@
 import anthropic
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from config import settings
+from config import settings, get_setting
 from models.market import Market
 from models.prediction import Prediction, PredictorSource
 from models.research import ResearchReport
@@ -46,7 +46,7 @@ _PREDICTION_TOOL = {
 
 class ClaudePredictor(BasePredictor):
     def __init__(self):
-        self._client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        self._client = anthropic.Anthropic(api_key=get_setting("anthropic_api_key"))
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     def predict(self, market: Market, research: ResearchReport) -> Prediction:

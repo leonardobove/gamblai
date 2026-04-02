@@ -10,7 +10,9 @@
       "WebSearch",
       "WebFetch(domain:docs.kalshi.com)",
       "Bash(git commit -m \"feat: Kalshi API v2 integration:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(.venv/Scripts/python main.py run)",
+      "Bash(.venv/Scripts/python -c \"from config import settings; print\\(''ANTHROPIC key set:'', bool\\(settings.anthropic_api_key\\)\\); print\\(''First 20 chars:'', settings.anthropic_api_key[:20] if settings.anthropic_api_key else ''EMPTY''\\); print\\(''TAVILY key set:'', bool\\(settings.tavily_api_key\\)\\)\")"
     ]
   }
 }

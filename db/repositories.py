@@ -222,3 +222,75 @@ class KnowledgeRepository:
                 "SELECT * FROM calibration_log ORDER BY timestamp DESC LIMIT ?", (limit,)
             ).fetchall()
         return [dict(r) for r in rows]
+
+
+class SettingsRepository:
+    def get(self, key: str) -> Optional[str]:
+        try:
+            with get_connection() as conn:
+                row = conn.execute(
+                    "SELECT value FROM app_settings WHERE key = ?", (key,)
+                ).fetchone()
+            return row["value"] if row else None
+        except Exception:
+            return None
+
+    def get_all(self) -> dict[str, dict]:
+        try:
+            with get_connection() as conn:
+                rows = conn.execute("SELECT * FROM app_settings").fetchall()
+            return {r["key"]: {"value": r["value"], "is_secret": bool(r["is_secret"]), "updated_at": r["updated_at"]} for r in rows}
+        except Exception:
+            return {}
+
+    def set(self, key: str, value: str, is_secret: bool = False) -> None:
+        with get_connection() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO app_settings (key, value, is_secret, updated_at) VALUES (?, ?, ?, ?)",
+                (key, value, 1 if is_secret else 0, datetime.utcnow().isoformat()),
+            )
+
+    def delete(self, key: str) -> None:
+        with get_connection() as conn:
+            conn.execute("DELETE FROM app_settings WHERE key = ?", (key,))
+
+
+class PipelineRunRepository:
+    def record(
+        self,
+        started_at: datetime,
+        finished_at: datetime,
+        status: str,
+        error_message: Optional[str],
+        markets_processed: int,
+        trades_executed: int,
+    ) -> None:
+        duration = (finished_at - started_at).total_seconds()
+        try:
+            with get_connection() as conn:
+                conn.execute(
+                    """INSERT INTO pipeline_runs
+                       (started_at, finished_at, status, duration_seconds, error_message, markets_processed, trades_executed)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        started_at.isoformat(),
+                        finished_at.isoformat(),
+                        status,
+                        round(duration, 1),
+                        error_message,
+                        markets_processed,
+                        trades_executed,
+                    ),
+                )
+        except Exception:
+            pass  # Never let health tracking crash the pipeline
+
+    def get_recent(self, limit: int = 20) -> list[dict]:
+        try:
+            with get_connection() as conn:
+                rows = conn.execute(
+                    "SELECT * FROM pipeline_runs ORDER BY started_at DESC LIMIT ?", (limit,)
+                ).fetchall()
+            return [dict(r) for r in rows]
+        except Exception:
+            return []

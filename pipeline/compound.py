@@ -1,6 +1,6 @@
 import structlog
 
-from config import settings
+from config import settings, get_setting, get_bool_setting, get_kalshi_private_key_path
 from db.repositories import TradeRepository, MarketRepository, KnowledgeRepository
 from knowledge.calibration import CalibrationTracker
 from knowledge.post_mortem import PostMortem
@@ -24,8 +24,8 @@ def _make_kalshi_executor():
     )
     client = KalshiClient(
         base_url=base_url,
-        key_id=settings.kalshi_api_key_id,
-        private_key_path=settings.kalshi_private_key_path,
+        key_id=get_setting("kalshi_api_key_id"),
+        private_key_path=get_kalshi_private_key_path(),
     )
     return KalshiExecutor(client)
 
@@ -38,7 +38,7 @@ class CompoundStep:
         self._post_mortem = PostMortem()
         self._kalshi_executor = (
             _make_kalshi_executor()
-            if settings.kalshi_enabled and settings.kalshi_execute_trades
+            if get_bool_setting("kalshi_enabled") and get_bool_setting("kalshi_execute_trades")
             else None
         )
 

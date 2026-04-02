@@ -1,6 +1,6 @@
 import structlog
 
-from config import settings
+from config import settings, get_setting
 from models.market import Market
 from models.prediction import EnsemblePrediction
 from models.research import ResearchReport
@@ -16,7 +16,7 @@ class PredictStep:
     def __init__(self):
         self._bayesian = BayesianPredictor()
         self._ensemble = EnsembleAggregator()
-        self._claude = ClaudePredictor() if settings.anthropic_api_key else None
+        self._claude = ClaudePredictor() if get_setting("anthropic_api_key") else None
         self._mirofish = MiroFishPredictor() if settings.mirofish_enabled else None
 
     def run(self, market: Market, research: ResearchReport) -> EnsemblePrediction:

@@ -1,7 +1,7 @@
 import structlog
 from tavily import TavilyClient
 
-from config import settings
+from config import get_setting
 from models.market import Market
 from research_providers.base import BaseResearchProvider
 
@@ -10,7 +10,7 @@ log = structlog.get_logger()
 
 class TavilyResearchProvider(BaseResearchProvider):
     def __init__(self):
-        self._client = TavilyClient(api_key=settings.tavily_api_key)
+        self._client = TavilyClient(api_key=get_setting("tavily_api_key"))
 
     def search(self, market: Market) -> list[dict]:
         try:

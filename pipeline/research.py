@@ -2,7 +2,7 @@ import anthropic
 import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from config import settings
+from config import settings, get_setting
 from db.repositories import ResearchCacheRepository
 from models.market import Market
 from models.research import ResearchReport, NewsItem
@@ -14,7 +14,7 @@ log = structlog.get_logger()
 
 
 def _build_provider() -> BaseResearchProvider:
-    if settings.tavily_api_key:
+    if get_setting("tavily_api_key"):
         log.info("research_provider", type="tavily")
         return TavilyResearchProvider()
     log.info("research_provider", type="mock")
@@ -25,7 +25,8 @@ class ResearchStep:
     def __init__(self):
         self._cache = ResearchCacheRepository()
         self._provider = _build_provider()
-        self._client = anthropic.Anthropic(api_key=settings.anthropic_api_key) if settings.anthropic_api_key else None
+        api_key = get_setting("anthropic_api_key")
+        self._client = anthropic.Anthropic(api_key=api_key) if api_key else None
 
     def run(self, market: Market) -> ResearchReport:
         cached = self._cache.find_by_market(market.id, max_age_minutes=settings.research_cache_minutes)

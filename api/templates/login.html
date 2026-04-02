@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GamblAI — Login</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Courier New', monospace; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .card { background: #111120; border: 1px solid #2a2a4a; border-radius: 10px; padding: 40px; width: 100%; max-width: 400px; }
+  h1 { font-size: 1.3rem; color: #7c6aff; letter-spacing: 2px; margin-bottom: 6px; }
+  .subtitle { font-size: 0.78rem; color: #666; margin-bottom: 28px; }
+  label { display: block; font-size: 0.72rem; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; margin-top: 16px; }
+  input { width: 100%; background: #0a0a0f; border: 1px solid #2a2a4a; border-radius: 4px; color: #e0e0e0; padding: 10px 12px; font-family: inherit; font-size: 0.85rem; outline: none; }
+  input:focus { border-color: #7c6aff; }
+  .btn { display: block; width: 100%; margin-top: 24px; padding: 12px; background: #7c6aff; color: #fff; border: none; border-radius: 4px; font-family: inherit; font-size: 0.9rem; cursor: pointer; letter-spacing: 1px; }
+  .btn:hover { background: #9a8aff; }
+  .error { background: #3a1a1a; border: 1px solid #ff4c6a; color: #ff4c6a; padding: 10px 14px; border-radius: 4px; font-size: 0.8rem; margin-bottom: 16px; }
+  .back { display: block; text-align: center; margin-top: 16px; font-size: 0.75rem; color: #555; text-decoration: none; }
+  .back:hover { color: #888; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>GamblAI</h1>
+  <p class="subtitle">Sign in to access Settings</p>
+
+  {% if error %}
+  <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <form method="post" action="/login">
+    <input type="hidden" name="next" value="{{ next }}">
+
+    <label>Username</label>
+    <input type="text" name="username" autocomplete="username" required autofocus>
+
+    <label>Password</label>
+    <input type="password" name="password" autocomplete="current-password" required>
+
+    <button class="btn" type="submit">Sign In</button>
+  </form>
+  <a class="back" href="/">Back to Dashboard</a>
+</div>
+</body>
+</html>
