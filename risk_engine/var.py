@@ -24,6 +24,16 @@ def calculate_var(returns: list[float], position_size: float) -> VaRResult:
     variance = sum((r - mean) ** 2 for r in returns) / n
     std = math.sqrt(variance)
 
+    # If all historical returns are identical (e.g. all $0 before first resolution),
+    # std=0 would produce a degenerate VaR of 0 and block all trades. Treat as permissive.
+    if std == 0.0:
+        return VaRResult(
+            var_95=position_size,
+            portfolio_mean_return=round(mean, 4),
+            portfolio_std=0.0,
+            passes=True,
+        )
+
     var_95 = -(mean - _Z_95 * std)
 
     # Trade passes if its size doesn't exceed 3x the historical 95% VaR of prior trades
